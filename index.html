@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>كشف حساب — شعيب</title>
+<style>
+  :root { --p:#0f766e; --bg:#f1f5f9; --card:#fff; --tx:#0f172a; --mut:#64748b; --ok:#dcfce7; --late:#fee2e2; --part:#fef3c7; --bd:#e2e8f0; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0b1220; --card:#111a2e; --tx:#e2e8f0; --mut:#94a3b8; --ok:#14532d; --late:#7f1d1d; --part:#78350f; --bd:#1e293b; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "Segoe UI", Tahoma, Arial, sans-serif; background:var(--bg); color:var(--tx); }
+  header { background:var(--p); color:#fff; padding:22px 16px 46px; text-align:center; }
+  header h1 { margin:0; font-size:20px; } header p { margin:6px 0 0; opacity:.9; font-size:14px; }
+  main { max-width:860px; margin:-30px auto 30px; padding:0 12px; }
+  .card { background:var(--card); border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:8px; }
+  .kv { display:flex; justify-content:space-between; gap:10px; padding:8px 10px; border-radius:10px; background:var(--bg); font-size:14px; }
+  .kv b { color:var(--mut); font-weight:600; }
+  h2 { font-size:16px; margin:0 0 10px; color:var(--p); }
+  .tw { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; min-width:420px; }
+  th { background:var(--p); color:#fff; padding:8px 6px; font-weight:600; white-space:nowrap; }
+  td { padding:7px 6px; border-bottom:1px solid var(--bd); text-align:center; }
+  tr.s1 td { background:var(--ok); } tr.s2 td { background:var(--late); } tr.s3 td { background:var(--part); }
+  .tot { display:flex; justify-content:space-between; font-weight:700; font-size:16px; padding:10px 12px; border-radius:12px; background:var(--bg); margin-top:8px; }
+  .legend { display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--mut); margin-top:8px; }
+  .legend span::before { content:""; display:inline-block; width:10px; height:10px; border-radius:3px; margin-inline-end:4px; vertical-align:middle; }
+  .l1::before { background:var(--ok); } .l2::before { background:var(--late); } .l3::before { background:var(--part); }
+  footer { text-align:center; color:var(--mut); font-size:12px; margin:20px 0 40px; }
+  .btn { display:inline-block; background:var(--p); color:#fff; border:0; padding:10px 18px; border-radius:999px; font-size:14px; cursor:pointer; }
+  .err { text-align:center; padding:40px 16px; }
+  @media print { header { padding-bottom:16px; } main { margin-top:10px; } .noprint { display:none; } .card { box-shadow:none; border:1px solid #ddd; } }
+</style>
+</head>
+<body>
+<header><h1 id="t">كشف حساب</h1><p id="s"></p></header>
+<main id="m"><div class="card err">جارِ تحميل الكشف…</div></main>
+<footer>صادر من تطبيق <b>شعيب</b> لإدارة الجمعيات والسلف والتقسيط والحسابات • البيانات محفوظة داخل الرابط نفسه ولا تُرفع لأي خادم</footer>
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+function b64(s){ s=s.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="="; const bin=atob(s); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u; }
+async function inflate(u){ const ds=new DecompressionStream("deflate-raw"); const st=new Blob([u]).stream().pipeThrough(ds); return await new Response(st).text(); }
+function fail(msg){ document.getElementById("m").innerHTML='<div class="card err">'+msg+'</div>'; }
+(async()=>{
+  const h=location.hash.slice(1);
+  if(!h){ fail("لا يوجد كشف في هذا الرابط. افتح الرابط المرسل إليك كاملاً."); return; }
+  if(!("DecompressionStream" in window)){ fail("المتصفح قديم ولا يدعم عرض الكشف. حدّث المتصفح (Chrome أو Safari) ثم أعد فتح الرابط."); return; }
+  let d; try{ d=JSON.parse(await inflate(b64(h))); }catch(e){ fail("الرابط غير مكتمل أو تالف. اطلب إرساله مرة أخرى."); return; }
+  const en = d.l==="en"; if(en){ document.documentElement.lang="en"; document.documentElement.dir="ltr"; }
+  document.title=(d.t||"")+" — "+(d.s||"");
+  document.getElementById("t").textContent=d.t||"";
+  document.getElementById("s").textContent=(d.s||"")+(d.d?(" • "+d.d):"")+(d.by?(" • "+d.by):"");
+  let html="";
+  if(d.i&&d.i.length){ html+='<div class="card"><div class="grid">'+d.i.map(p=>'<div class="kv"><b>'+esc(p[0])+'</b><span>'+esc(p[1])+'</span></div>').join("")+'</div></div>'; }
+  let anyStatus=false;
+  (d.tb||[]).forEach(t=>{
+    if(!t.r||!t.r.length) return;
+    html+='<div class="card"><h2>'+esc(t.n)+'</h2><div class="tw"><table><thead><tr>'+t.h.map(x=>'<th>'+esc(x)+'</th>').join("")+'</tr></thead><tbody>';
+    t.r.forEach((r,i)=>{ const st=(t.st||[])[i]||0; if(st) anyStatus=true; html+='<tr class="s'+st+'">'+r.map(x=>'<td>'+esc(x)+'</td>').join("")+'</tr>'; });
+    html+='</tbody></table></div></div>';
+  });
+  if(d.to&&d.to.length){ html+='<div class="card">'+d.to.map(p=>'<div class="tot"><span>'+esc(p[0])+'</span><span>'+esc(p[1])+'</span></div>').join("")+(anyStatus?'<div class="legend"><span class="l1">'+(en?"Paid":"مدفوع")+'</span><span class="l2">'+(en?"Late":"متأخر")+'</span><span class="l3">'+(en?"Partial":"جزئي")+'</span></div>':"")+'</div>'; }
+  if(d.n){ html+='<div class="card"><h2>'+(en?"Notes":"ملاحظات")+'</h2><div>'+esc(d.n).replace(/\n/g,"<br>")+'</div></div>'; }
+  html+='<div class="noprint" style="text-align:center"><button class="btn" onclick="print()">'+(en?"Print / Save PDF":"طباعة / حفظ PDF")+'</button></div>';
+  document.getElementById("m").innerHTML=html;
+})();
+</script>
+</body>
+</html>
