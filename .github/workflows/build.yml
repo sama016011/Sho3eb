@@ -11,8 +11,21 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
-      - working-directory: src/Sho3eb
-        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+      - name: Build APK
+        working-directory: src/Sho3eb
+        run: |
+          chmod +x gradlew
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon 2>&1 | tee build.log
+      - name: Report errors
+        if: failure()
+        working-directory: src/Sho3eb
+        run: |
+          msg=$( (grep -E '^e: ' build.log; grep -A6 'What went wrong' build.log) | sed 's#file:///home/runner/work/[^ ]*/src/Sho3eb/##' | head -80 )
+          msg="${msg//'%'/'%25'}"
+          msg="${msg//$'\r'/'%0D'}"
+          msg="${msg//$'\n'/'%0A'}"
+          echo "::error title=Build errors::$msg"
       - uses: actions/upload-artifact@v4
         with:
           name: Sho3eb-APK
